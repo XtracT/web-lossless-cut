@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  weblosslesscut:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: web-lossless-cut
+    ports:
+      - "3001:3001"
+    volumes:
+      - /mnt/fastpool/dji:/input
+      - ./output:/output
+    restart: unless-stopped
