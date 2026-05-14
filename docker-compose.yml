@@ -11,4 +11,9 @@ services:
     volumes:
       - /mnt/fastpool/dji:/input
       - ./output:/output
+      # Subfolder example for separate media libraries:
+      # - /nas/camera-videos:/input/camera
+      # - /nas/kids-music:/input/music
+      # - /nas/output-videos:/output/camera
+      # - /nas/output-music:/output/music
     restart: unless-stopped
