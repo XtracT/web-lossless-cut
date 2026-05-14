@@ -36,6 +36,7 @@ function App() {
   const [isAudioMode, setIsAudioMode] = useState(false);
   const [preparingAudio, setPreparingAudio] = useState(false);
   const [audioProxyUrl, setAudioProxyUrl] = useState(null);
+  const [mediaType, setMediaType] = useState('video');
   
   const videoRef = useRef(null);
   const audioRef = useRef(null);
@@ -44,7 +45,7 @@ function App() {
     const currentPath = activeTab === 'input' ? inputPath : outputPath;
     try {
       const res = await axios.get(`${API_BASE}/files`, {
-        params: { type: activeTab, path: currentPath }
+        params: { type: activeTab, path: currentPath, mediaType }
       });
       setBrowserData(res.data);
     } catch (err) {
@@ -54,7 +55,17 @@ function App() {
 
   useEffect(() => {
     fetchFiles();
-  }, [activeTab, inputPath, outputPath]);
+  }, [activeTab, inputPath, outputPath, mediaType]);
+
+  // Reset selection when media type changes
+  useEffect(() => {
+    setSelectedFile(null);
+    setSegments([]);
+    setKeyframes([]);
+    setIsAudioMode(false);
+    setAudioProxyUrl(null);
+    setPreparingAudio(false);
+  }, [mediaType]);
 
   const handleFolderClick = (folderName) => {
     const currentPath = activeTab === 'input' ? inputPath : outputPath;
@@ -219,6 +230,21 @@ function App() {
           </h1>
           <button onClick={fetchFiles} className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors">
             <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="flex bg-zinc-900 border-b border-zinc-800 p-1.5 gap-1">
+          <button 
+            onClick={() => setMediaType('video')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider transition-colors ${mediaType === 'video' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:bg-zinc-800/50'}`}
+          >
+            <FileVideo className="w-3.5 h-3.5" /> Video
+          </button>
+          <button 
+            onClick={() => setMediaType('audio')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider transition-colors ${mediaType === 'audio' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:bg-zinc-800/50'}`}
+          >
+            <FileAudio className="w-3.5 h-3.5" /> Audio
           </button>
         </div>
 
