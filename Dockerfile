@@ -25,9 +25,6 @@ COPY --from=frontend-build /frontend/dist ./public
 # Expose the single port
 EXPOSE 3001
 
-# Volumes for media
-VOLUME ["/input", "/output"]
-
 # Entrypoint script fixes permissions at runtime for PUID/PGID users
 COPY backend/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
