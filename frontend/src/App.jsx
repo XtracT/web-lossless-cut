@@ -329,18 +329,19 @@ function App() {
             <div className="flex-1 flex flex-col relative">
               <div className="flex-1 flex items-center justify-center bg-black/40 p-4">
                 {isAudioMode ? (
-                  <div className="flex flex-col items-center gap-6">
-                    <div className="p-12 rounded-full bg-zinc-900/80 border border-zinc-800">
-                      <FileAudio className="w-24 h-24 text-blue-500/40" />
+                  <div className="flex flex-col items-center gap-6 w-full px-8">
+                    <div className="p-8 rounded-full bg-zinc-900/80 border border-zinc-800">
+                      <FileAudio className="w-16 h-16 text-blue-500/40" />
                     </div>
                     <audio
                       ref={audioRef}
                       src={audioProxyUrl || selectedFile.url}
                       controls
-                      className="w-full max-w-md"
+                      className="w-full max-w-3xl h-12"
                       onLoadedMetadata={() => { setDuration(audioRef.current.duration); setEndTime(audioRef.current.duration); }}
                       onTimeUpdate={() => setCurrentTime(audioRef.current.currentTime)}
                     />
+                    <p className="text-xs text-zinc-500 font-mono">{selectedFile.name}</p>
                   </div>
                 ) : (
                   <video 

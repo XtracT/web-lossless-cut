@@ -27,6 +27,9 @@ EXPOSE 3001
 
 # Volumes for media
 VOLUME ["/input", "/output"]
-RUN chmod 777 /input /output
 
-CMD ["node", "index.js"]
+# Entrypoint script fixes permissions at runtime for PUID/PGID users
+COPY backend/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
