@@ -79,12 +79,12 @@ app.get('/api/files', (req, res) => {
     const entries = fs.readdirSync(targetDir, { withFileTypes: true });
     
     const folders = entries
-      .filter(e => e.isDirectory())
+      .filter(e => e.isDirectory() && !e.name.startsWith('.'))
       .map(e => e.name)
       .sort();
 
     const files = entries
-      .filter(e => e.isFile() && isVideo(e.name))
+      .filter(e => e.isFile() && !e.name.startsWith('.') && (isVideo(e.name) || isAudio(e.name)))
       .map(e => e.name)
       .sort();
 
