@@ -370,7 +370,7 @@ app.post('/api/cut-audio', async (req, res) => {
       fs.writeFileSync(concatFilePath, concatContent);
 
       const mergedWav = path.join(tempDir, 'merged.wav');
-      await execAsync(`ffmpeg -y -f concat -safe 0 -i "${concatFilePath}" -c copy "${mergedWav}");
+      await execAsync(`ffmpeg -y -f concat -safe 0 -i "${concatFilePath}" -c copy "${mergedWav}"`);
 
       const outputFileName = `${finalBase}_merged_${timestamp}${ext}`;
       const outputPath = path.join(OUTPUT_DIR, outputFileName);
