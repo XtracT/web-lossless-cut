@@ -179,7 +179,7 @@ app.post('/api/batch-cut', async (req, res) => {
   try {
     if (merge) {
       // MERGE LOGIC
-      const tempDir = path.join(OUTPUT_DIR, `temp_${timestamp}`);
+      const tempDir = path.join('/tmp', `temp_${timestamp}`);
       fs.mkdirSync(tempDir);
 
       const segmentFiles = [];
@@ -350,7 +350,7 @@ app.post('/api/cut-audio', async (req, res) => {
     }
   };
 
-  const tempDir = path.join(OUTPUT_DIR, `.temp_audio_${timestamp}`);
+  const tempDir = path.join('/tmp', `.temp_audio_${timestamp}`);
   fs.mkdirSync(tempDir, { recursive: true });
 
   try {
