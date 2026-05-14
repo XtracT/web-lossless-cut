@@ -63,6 +63,7 @@ const getFormatFlag = (filename) => {
 app.get('/api/files', (req, res) => {
   const subPath = req.query.path || '';
   const type = req.query.type || 'input'; // 'input' or 'output'
+  const mediaType = req.query.mediaType || 'video'; // 'video' or 'audio'
   const rootDir = type === 'input' ? INPUT_DIR : OUTPUT_DIR;
   const targetDir = path.join(rootDir, subPath);
 
@@ -70,6 +71,8 @@ app.get('/api/files', (req, res) => {
   if (!targetDir.startsWith(rootDir)) {
     return res.status(403).json({ error: 'Access denied' });
   }
+
+  const matchesMedia = mediaType === 'audio' ? isAudio : isVideo;
 
   try {
     if (!fs.existsSync(targetDir)) {
@@ -84,7 +87,7 @@ app.get('/api/files', (req, res) => {
       .sort();
 
     const files = entries
-      .filter(e => e.isFile() && !e.name.startsWith('.') && (isVideo(e.name) || isAudio(e.name)))
+      .filter(e => e.isFile() && !e.name.startsWith('.') && matchesMedia(e.name))
       .map(e => e.name)
       .sort();
 
