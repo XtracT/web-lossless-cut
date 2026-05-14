@@ -27,5 +27,6 @@ EXPOSE 3001
 
 # Volumes for media
 VOLUME ["/input", "/output"]
+RUN chmod 777 /input /output
 
 CMD ["node", "index.js"]
