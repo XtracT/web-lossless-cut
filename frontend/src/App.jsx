@@ -2,11 +2,17 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { 
   Scissors, Trash2, FolderOpen, RefreshCw, 
-  ChevronRight, FileVideo, Plus, List, Layers, SkipBack, SkipForward,
+  ChevronRight, FileVideo, FileAudio, Plus, List, Layers, SkipBack, SkipForward,
   Clock, X, Folder, ChevronLeft
 } from 'lucide-react';
 
 const API_BASE = '/api';
+
+const AUDIO_EXTS = ['.mp3', '.flac', '.aac', '.wav', '.ogg', '.m4a', '.opus', '.wma'];
+const isAudioFile = (name) => {
+  const ext = name.includes('.') ? '.' + name.split('.').pop().toLowerCase() : '';
+  return AUDIO_EXTS.includes(ext);
+};
 
 function App() {
   const [browserData, setBrowserData] = useState({ files: [], folders: [], currentPath: '', parent: null });
@@ -27,7 +33,12 @@ function App() {
   const [keyframes, setKeyframes] = useState([]);
   const [shouldMerge, setShouldMerge] = useState(false);
   
+  const [isAudioMode, setIsAudioMode] = useState(false);
+  const [preparingAudio, setPreparingAudio] = useState(false);
+  const [audioProxyUrl, setAudioProxyUrl] = useState(null);
+  
   const videoRef = useRef(null);
+  const audioRef = useRef(null);
 
   const fetchFiles = async () => {
     const currentPath = activeTab === 'input' ? inputPath : outputPath;
@@ -62,8 +73,11 @@ function App() {
     const currentPath = activeTab === 'input' ? inputPath : outputPath;
     const fullRelativePath = currentPath ? `${currentPath}/${file}` : file;
     const url = activeTab === 'input' ? `/input-files/${fullRelativePath}` : `/output-files/${fullRelativePath}`;
+    const audio = isAudioFile(file);
     
     setSelectedFile({ name: file, fullPath: fullRelativePath, url, type: activeTab });
+    setIsAudioMode(audio);
+    setAudioProxyUrl(null);
     setStartTime(0);
     setEndTime(0);
     setCustomName('');
@@ -119,7 +133,9 @@ function App() {
   };
 
   const seekToKeyframe = (direction) => {
-    if (!keyframes.length || !videoRef.current) return;
+    if (!keyframes.length) return;
+    const ref = isAudioMode ? audioRef : videoRef;
+    if (!ref.current) return;
     
     let targetTime;
     if (direction === 'next') {
@@ -129,13 +145,14 @@ function App() {
     }
 
     if (targetTime !== undefined) {
-      videoRef.current.currentTime = targetTime;
+      ref.current.currentTime = targetTime;
     }
   };
 
   const stepFrame = (frames) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime += frames * (1/30);
+    const ref = isAudioMode ? audioRef : videoRef;
+    if (ref.current) {
+      ref.current.currentTime += frames * (1/30);
     }
   };
 
@@ -231,22 +248,29 @@ function App() {
             </div>
           ))}
 
-          {browserData.files.map(file => (
-            <div 
-              key={file}
-              onClick={() => handleFileSelect(file)}
-              className={`group flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all ${selectedFile?.name === file && selectedFile?.fullPath === (browserData.currentPath ? `${browserData.currentPath}/${file}` : file) ? 'bg-blue-600 shadow-lg shadow-blue-900/20 text-white' : 'hover:bg-zinc-800'}`}
-            >
-              <FileVideo className={`w-4 h-4 shrink-0 ${selectedFile?.name === file ? 'text-blue-100' : 'text-zinc-500'}`} />
-              <span className="text-[11px] font-medium truncate flex-1">{file}</span>
-              <button 
-                onClick={(e) => handleDelete(e, file)}
-                className={`p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500 transition-all ${selectedFile?.name === file ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+          {browserData.files.map(file => {
+            const audio = isAudioFile(file);
+            return (
+              <div 
+                key={file}
+                onClick={() => handleFileSelect(file)}
+                className={`group flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all ${selectedFile?.name === file && selectedFile?.fullPath === (browserData.currentPath ? `${browserData.currentPath}/${file}` : file) ? 'bg-blue-600 shadow-lg shadow-blue-900/20 text-white' : 'hover:bg-zinc-800'}`}
               >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))}
+                {audio ? (
+                  <FileAudio className={`w-4 h-4 shrink-0 ${selectedFile?.name === file ? 'text-blue-100' : 'text-zinc-500'}`} />
+                ) : (
+                  <FileVideo className={`w-4 h-4 shrink-0 ${selectedFile?.name === file ? 'text-blue-100' : 'text-zinc-500'}`} />
+                )}
+                <span className="text-[11px] font-medium truncate flex-1">{file}</span>
+                <button 
+                  onClick={(e) => handleDelete(e, file)}
+                  className={`p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500 transition-all ${selectedFile?.name === file ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -256,20 +280,42 @@ function App() {
           <>
             <div className="flex-1 flex flex-col relative">
               <div className="flex-1 flex items-center justify-center bg-black/40 p-4">
-                <video 
-                  ref={videoRef}
-                  src={selectedFile.url}
-                  className="max-h-full max-w-full shadow-2xl rounded-sm"
-                  controls
-                  onLoadedMetadata={() => { setDuration(videoRef.current.duration); setEndTime(videoRef.current.duration); }}
-                  onTimeUpdate={() => setCurrentTime(videoRef.current.currentTime)}
-                />
+                {isAudioMode ? (
+                  <div className="flex flex-col items-center gap-6">
+                    <div className="p-12 rounded-full bg-zinc-900/80 border border-zinc-800">
+                      <FileAudio className="w-24 h-24 text-blue-500/40" />
+                    </div>
+                    <audio
+                      ref={audioRef}
+                      src={audioProxyUrl || selectedFile.url}
+                      controls
+                      className="w-full max-w-md"
+                      onLoadedMetadata={() => { setDuration(audioRef.current.duration); setEndTime(audioRef.current.duration); }}
+                      onTimeUpdate={() => setCurrentTime(audioRef.current.currentTime)}
+                    />
+                  </div>
+                ) : (
+                  <video 
+                    ref={videoRef}
+                    src={selectedFile.url}
+                    className="max-h-full max-w-full shadow-2xl rounded-sm"
+                    controls
+                    onLoadedMetadata={() => { setDuration(videoRef.current.duration); setEndTime(videoRef.current.duration); }}
+                    onTimeUpdate={() => setCurrentTime(videoRef.current.currentTime)}
+                  />
+                )}
               </div>
 
               {analyzingKeyframes && (
                 <div className="absolute top-4 right-4 bg-zinc-900/90 border border-zinc-700 rounded-full px-4 py-2 flex items-center gap-3 shadow-xl backdrop-blur-sm">
                   <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />
                   <span className="text-xs font-bold text-white uppercase tracking-tighter">Analyzing Keyframes...</span>
+                </div>
+              )}
+              {preparingAudio && (
+                <div className="absolute top-4 right-4 bg-zinc-900/90 border border-zinc-700 rounded-full px-4 py-2 flex items-center gap-3 shadow-xl backdrop-blur-sm">
+                  <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />
+                  <span className="text-xs font-bold text-white uppercase tracking-tighter">Preparing Audio...</span>
                 </div>
               )}
             </div>
@@ -291,12 +337,14 @@ function App() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 bg-zinc-800 p-1 rounded-lg">
-                      <button onClick={() => seekToKeyframe('prev')} className="p-2 hover:bg-zinc-700 rounded-md text-zinc-400" title="Prev Keyframe"><SkipBack className="w-4 h-4" /></button>
-                      <button onClick={() => stepFrame(-1)} className="p-2 hover:bg-zinc-700 rounded-md text-zinc-400" title="-1 Frame"><ChevronRight className="w-4 h-4 rotate-180" /></button>
-                      <button onClick={() => stepFrame(1)} className="p-2 hover:bg-zinc-700 rounded-md text-zinc-400" title="+1 Frame"><ChevronRight className="w-4 h-4" /></button>
-                      <button onClick={() => seekToKeyframe('next')} className="p-2 hover:bg-zinc-700 rounded-md text-zinc-400" title="Next Keyframe"><SkipForward className="w-4 h-4" /></button>
-                    </div>
+                    {!isAudioMode && (
+                      <div className="flex items-center gap-1 bg-zinc-800 p-1 rounded-lg">
+                        <button onClick={() => seekToKeyframe('prev')} className="p-2 hover:bg-zinc-700 rounded-md text-zinc-400" title="Prev Keyframe"><SkipBack className="w-4 h-4" /></button>
+                        <button onClick={() => stepFrame(-1)} className="p-2 hover:bg-zinc-700 rounded-md text-zinc-400" title="-1 Frame"><ChevronRight className="w-4 h-4 rotate-180" /></button>
+                        <button onClick={() => stepFrame(1)} className="p-2 hover:bg-zinc-700 rounded-md text-zinc-400" title="+1 Frame"><ChevronRight className="w-4 h-4" /></button>
+                        <button onClick={() => seekToKeyframe('next')} className="p-2 hover:bg-zinc-700 rounded-md text-zinc-400" title="Next Keyframe"><SkipForward className="w-4 h-4" /></button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -357,9 +405,9 @@ function App() {
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-zinc-700 space-y-4">
             <div className="p-8 rounded-full bg-zinc-900/50">
-               <FileVideo className="w-20 h-20 opacity-10" />
+               <Scissors className="w-20 h-20 opacity-10" />
             </div>
-            <p className="text-sm font-medium tracking-tight">Select a video to start your lossless workflow</p>
+            <p className="text-sm font-medium tracking-tight">Select a file to start your lossless workflow</p>
           </div>
         )}
       </div>
@@ -403,7 +451,7 @@ function App() {
                   <div className="flex items-center justify-between pt-1">
                     <span className="text-[9px] font-bold text-zinc-500">Duration: {seg.duration.toFixed(2)}s</span>
                     <button 
-                      onClick={() => { videoRef.current.currentTime = seg.start; videoRef.current.play(); }}
+                      onClick={() => { const ref = isAudioMode ? audioRef : videoRef; ref.current.currentTime = seg.start; ref.current.play(); }}
                       className="text-[9px] font-bold text-blue-400 hover:underline"
                     >
                       Preview Range
