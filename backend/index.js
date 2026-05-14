@@ -35,11 +35,18 @@ app.use(express.static(frontendPath));
 app.use('/input-files', express.static(INPUT_DIR));
 app.use('/output-files', express.static(OUTPUT_DIR));
 
-const ALLOWED_EXTS = ['.mp4', '.mkv', '.mov', '.avi', '.webm', '.lrf', '.m4v', '.ts'];
+const VIDEO_EXTS = ['.mp4', '.mkv', '.mov', '.avi', '.webm', '.lrf', '.m4v', '.ts'];
+const AUDIO_EXTS = ['.mp3', '.flac', '.aac', '.wav', '.ogg', '.m4a', '.opus', '.wma'];
+const ALLOWED_EXTS = [...VIDEO_EXTS, ...AUDIO_EXTS];
 
 const isVideo = (name) => {
   const ext = path.extname(name).toLowerCase();
-  return ALLOWED_EXTS.includes(ext);
+  return VIDEO_EXTS.includes(ext);
+};
+
+const isAudio = (name) => {
+  const ext = path.extname(name).toLowerCase();
+  return AUDIO_EXTS.includes(ext);
 };
 
 const getFormatFlag = (filename) => {
@@ -121,6 +128,11 @@ app.get('/api/keyframes', (req, res) => {
   // Security: Prevent path traversal
   if (!filePath.startsWith(INPUT_DIR)) {
     return res.status(403).json({ error: 'Access denied' });
+  }
+
+  // Audio files have no video keyframes
+  if (isAudio(relativePath)) {
+    return res.json({ keyframes: [] });
   }
 
   // ffprobe to get I-frame timestamps
