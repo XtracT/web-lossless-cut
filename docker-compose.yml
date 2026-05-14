@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   weblosslesscut:
-    build: 
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/xtract/web-lossless-cut:main
     container_name: web-lossless-cut
     ports:
       - "3001:3001"

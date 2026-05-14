@@ -28,8 +28,9 @@ A high-performance, web-based lossless video trimmer and audio cutter powered by
 1.  **Prepare Media**: Place your media files (or folders) in the `input` directory.
 2.  **Start Container**:
     ```bash
-    docker-compose up --build
+    docker-compose up -d
     ```
+    The image is pulled from `ghcr.io/xtract/web-lossless-cut:main`. To build from source instead, use `docker-compose up --build`.
 3.  **Access App**: Navigate to `http://localhost:3001`.
 
 ### Separate media libraries
