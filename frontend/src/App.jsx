@@ -85,7 +85,21 @@ function App() {
     setKeyframes([]);
 
     if (activeTab === 'input') {
-      fetchKeyframes(fullRelativePath);
+      if (audio) {
+        // Generate WAV proxy for accurate browser preview
+        setPreparingAudio(true);
+        try {
+          const res = await axios.post(`${API_BASE}/prepare-audio`, { filePath: fullRelativePath });
+          setAudioProxyUrl(res.data.proxyUrl);
+        } catch (err) {
+          console.error('Failed to prepare audio', err);
+          alert('Failed to prepare audio for preview');
+        } finally {
+          setPreparingAudio(false);
+        }
+      } else {
+        fetchKeyframes(fullRelativePath);
+      }
     }
   };
 
@@ -161,7 +175,8 @@ function App() {
     
     setLoading(true);
     try {
-      const res = await axios.post(`${API_BASE}/batch-cut`, {
+      const endpoint = isAudioMode ? `${API_BASE}/cut-audio` : `${API_BASE}/batch-cut`;
+      const res = await axios.post(endpoint, {
         fileName: selectedFile.fullPath,
         segments: finalSegments,
         merge: shouldMerge,
@@ -169,6 +184,13 @@ function App() {
       });
       fetchFiles();
       setSegments([]);
+
+      // Cleanup audio proxy after successful export
+      if (isAudioMode && audioProxyUrl) {
+        const proxyFilename = audioProxyUrl.split('/').pop();
+        axios.post(`${API_BASE}/cleanup-audio`, { proxyFilename }).catch(() => {});
+      }
+
       alert(`Export successful!\n${shouldMerge ? 'Created: ' + res.data.outputFile : 'Created ' + finalSegments.length + ' files.'}`);
     } catch (err) {
       alert('Export failed: ' + (err.response?.data?.error || err.message));
@@ -390,7 +412,7 @@ function App() {
                       />
                       <button 
                         onClick={handleBatchExport}
-                        disabled={loading || analyzingKeyframes || (segments.length === 0 && startTime >= endTime)}
+                        disabled={loading || analyzingKeyframes || preparingAudio || (segments.length === 0 && startTime >= endTime)}
                         className="flex items-center gap-2 bg-white hover:bg-zinc-100 disabled:bg-zinc-800 disabled:text-zinc-600 px-6 py-2 rounded-md font-bold text-zinc-950 transition-all shadow-lg active:scale-95"
                       >
                         {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />}
