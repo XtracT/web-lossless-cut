@@ -25,8 +25,8 @@ COPY --from=frontend-build /frontend/dist ./public
 # Expose the single port
 EXPOSE 3001
 
-# Entrypoint script fixes permissions at runtime for PUID/PGID users
-COPY backend/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Create media dirs and set permissions as root (before PUID/PGID user takes over)
+RUN mkdir -p /input /output && chmod 777 /input /output
 
-ENTRYPOINT ["/entrypoint.sh"]
+# Entrypoint: just run node (permissions already set in image)
+CMD ["node", "index.js"]
