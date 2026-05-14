@@ -36,8 +36,8 @@ app.use(express.static(frontendPath));
 app.use('/input-files', express.static(INPUT_DIR));
 app.use('/output-files', express.static(OUTPUT_DIR));
 
-// Audio WAV proxy cache directory
-const AUDIO_PROXY_DIR = path.join(OUTPUT_DIR, '.audio-proxy');
+// Audio WAV proxy cache directory (use /tmp since proxies are ephemeral)
+const AUDIO_PROXY_DIR = '/tmp/audio-proxy';
 if (!fs.existsSync(AUDIO_PROXY_DIR)) fs.mkdirSync(AUDIO_PROXY_DIR, { recursive: true });
 app.use('/audio-proxy', express.static(AUDIO_PROXY_DIR));
 
