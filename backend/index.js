@@ -59,6 +59,12 @@ const getFormatFlag = (filename) => {
   return path.extname(filename).toLowerCase() === '.lrf' ? '-f mp4' : '';
 };
 
+const getOutputPath = (fileName, outputFileName) => {
+  const subDir = path.join(OUTPUT_DIR, path.dirname(fileName));
+  if (!fs.existsSync(subDir)) fs.mkdirSync(subDir, { recursive: true });
+  return path.join(subDir, outputFileName);
+};
+
 // List files with subfolder support
 app.get('/api/files', (req, res) => {
   const subPath = req.query.path || '';
@@ -203,7 +209,7 @@ app.post('/api/batch-cut', async (req, res) => {
       fs.writeFileSync(concatFilePath, concatContent);
 
       const outputFileName = `${finalBase}_merged_${timestamp}${ext}`;
-      const outputPath = path.join(OUTPUT_DIR, outputFileName);
+      const outputPath = getOutputPath(fileName, outputFileName);
       const formatFlag = getFormatFlag(outputFileName);
       const concatCmd = `ffmpeg -y -f concat -safe 0 -i "${concatFilePath}" -c copy -map 0 ${formatFlag} "${outputPath}"`;
 
@@ -221,7 +227,7 @@ app.post('/api/batch-cut', async (req, res) => {
       for (let i = 0; i < segments.length; i++) {
         const seg = segments[i];
         const outputFileName = `${finalBase}_part${i+1}_${timestamp}${ext}`;
-        const outputPath = path.join(OUTPUT_DIR, outputFileName);
+        const outputPath = getOutputPath(fileName, outputFileName);
         const formatFlag = getFormatFlag(outputFileName);
         const cmd = `ffmpeg -y -ss ${seg.start} -i "${inputPath}" -t ${seg.duration} -c copy -map 0 ${formatFlag} "${outputPath}"`;
 
@@ -253,7 +259,7 @@ app.post('/api/cut', (req, res) => {
   // Use customName if provided, otherwise original baseName
   const finalBase = (customName && customName.trim()) ? customName.trim() : baseName;
   const outputFileName = `${finalBase}_cut_${Date.now()}${ext}`;
-  const outputPath = path.join(OUTPUT_DIR, outputFileName);
+  const outputPath = getOutputPath(fileName, outputFileName);
 
   // Command: ffmpeg -ss [start] -i [input] -t [duration] -c copy [output]
   // Note: -ss before -i is faster (seeks to keyframe) but slightly less accurate. 
@@ -373,7 +379,7 @@ app.post('/api/cut-audio', async (req, res) => {
       await execAsync(`ffmpeg -y -f concat -safe 0 -i "${concatFilePath}" -c copy "${mergedWav}"`);
 
       const outputFileName = `${finalBase}_merged_${timestamp}${ext}`;
-      const outputPath = path.join(OUTPUT_DIR, outputFileName);
+      const outputPath = getOutputPath(fileName, outputFileName);
       await execAsync(buildReencodeCmd(mergedWav, outputPath, inputPath));
 
       fs.rmSync(tempDir, { recursive: true, force: true });
@@ -386,7 +392,7 @@ app.post('/api/cut-audio', async (req, res) => {
         const seg = segments[i];
         const tempWav = path.join(tempDir, `cut_${i}.wav`);
         const outputFileName = `${finalBase}_part${i + 1}_${timestamp}${ext}`;
-        const outputPath = path.join(OUTPUT_DIR, outputFileName);
+        const outputPath = getOutputPath(fileName, outputFileName);
 
         // Step 1: Precise cut from original to WAV
         const cutCmd = `ffmpeg -y -i "${inputPath}" -ss ${seg.start} -t ${seg.duration} -vn -ac 2 -ar 44100 -f wav "${tempWav}"`;
